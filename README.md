@@ -65,3 +65,64 @@ Fui guardando el avance en GitHub después de cada paso, con git add ., git comm
 - Paso 1: exploración de datos con shape y columns.
 - Paso 2: preparación y división estratificada de datos.
 - Paso 3: entrenamiento y configuración del modelo XGBoost.
+
+
+# Laboratorio 3.5: Machine Learning Pipeline with Amazon SageMaker - ¿Qué hice y por qué?
+
+## 1. Ingreso al laboratorio
+
+Lo primero que hice fue abrir la plataforma de AWS Academy para revisar la pantalla inicial y echarle un vistazo a los objetivos generales. Esto me sirvió para entender bien de qué trataba la práctica: básicamente, poner en marcha un modelo de machine learning y hacer transformaciones por lotes sobre un conjunto de datos de prueba.
+
+## 2. Apertura del JupyterLab 3.5
+
+Entré al entorno de trabajo en Amazon SageMaker Studio y me aseguré de que la instancia ml.m4.xlarge estuviera activa (InService). Hice esto para tener garantizados todos los recursos de cómputo y poder ejecutar las celdas y el código del laboratorio sin contratiempos.
+
+## 3. Notebook
+
+Abrí el cuaderno de notas del estudiante para meterme un poco en contexto con el escenario empresarial. Quería conocer bien las características de los datos biomédicos de los pacientes ortopédicos con los que íbamos a trabajar en todo el proceso de clasificación.
+
+## 4. Inicialización del repositorio GitHub
+
+Me pasé a la terminal de SageMaker para inicializar Git, sincronizar mi rama de trabajo (dev_dcharry55) y conectarla con el repositorio remoto de GitHub. De esta manera, me aseguré de mantener un control de versiones ordenado desde el primer minuto.
+
+## 5.6. Importación de los datos y configuración del entrenamiento del modelo XGBoost
+
+Instalé scipy y scikit-learn para dejar listo el entorno. Luego descargué los datos de la columna vertebral, convertí la clase a números (Abnormal 1, Normal 0), los dividí en entrenamiento, prueba y validación (80%, 10%, 10%) y los guardé como CSV en S3. Con eso entrené el modelo XGBoost de clasificación binaria, y el mensaje “ready for hosting!” confirmó que quedó listo para desplegarse.
+## 7. Status e inicio del primer commit
+
+Revisé cómo iban los archivos usando git status y armé el primer paquete de cambios con git ad` y git commit. Con esto dejé registrado formalmente en el historial que la fase inicial de preparación y carga de datos ya estaba completada.
+
+## 8. Paso 1: Alojar el modelo
+
+Desplegué el modelo entrenado corriendo la función xgb_model.deploy(). El propósito de esto fue levantar un punto de enlace (endpoint) en tiempo real dentro de SageMaker, permitiendo que el modelo quedara en línea y listo para recibir consultas externas de forma inmediata.
+
+## 9. y 10. Paso 2: Realizar predicciones
+
+Antes de hacer cualquier consulta, revisé la estructura del conjunto de datos de prueba apoyándome en .shape y .head() para entender bien las dimensiones y asegurarme de cómo venían organizadas las características. Una vez todo estuvo claro, aislé una sola fila como muestra, la transformé al formato CSV que requiere el modelo y la envié al endpoint usando xgb_predictor.predict(), lo que me permitió comprobar en tiempo real que el servicio estaba respondiendo correctamente y obtener su primera puntuación de probabilidad.
+
+## 11. Paso 3: Terminar el modelo implementado
+
+Como ya había terminado de hacer las pruebas individuales, ejecuté xgb_predictor.delete_endpoint(). Hice esto para borrar el punto de enlace y apagar la instancia activa, evitando así consumir recursos de más en la nube y generar costos innecesarios.
+
+## 12. 13. y 14. Paso 4: Realizar una transformación por lotes
+
+Primero separé las características del conjunto de prueba, guardé el archivo como batch-in.csv en Amazon S3 y armé un objeto transformer en SageMaker para correr todas las predicciones de un solo golpe y de forma masiva. Después de que terminó el proceso, descargué los resultados de vuelta a un DataFrame de Pandas y les aplicué la función de conversión binaria con un umbral de `0.65`, lo que me ayudó a transformar esas probabilidades continuas en ceros y unos definitivos para comprobar los resultados finales.
+
+## 15. Tarea desafío
+
+Para resolver el desafío, modifiqué la función de conversión y le subí el umbral a 0.99. Quería ver qué pasaba con las decisiones del modelo al ponerle un nivel de exigencia tan alto, obligándolo a que solo clasificara como positivos (`1`) a los casos de los que estuviera prácticamente 100% seguro.
+
+¿Afecta los resultados?
+
+Sí, cambiar el umbral afecta por completo los resultados. Al subir la valla a 0.99, el modelo se vuelve extremadamente exigente, ya que solo clasifica como positivo (1) aquellas instancias de las que está prácticamente seguro al 100%, mientras que cualquier probabilidad por debajo de ese límite drásticamente alto la convierte en cero (0). En contraste con un umbral más moderado (como 0.5 o 0.65), este ajuste altera significativamente la proporción de clasificaciones finales, demostrando que mover el límite modifica de forma directa el criterio con el que el modelo toma sus decisiones.
+
+## 16. Commits realizados
+
+Volví a la terminal para correr en orden los comandos git add, git commit y git push de cada una de las etapas que fui completando. Así logré mantener la rama dev_dcharry55 con un historial limpio, muy ordenado y fácil de rastrear.
+Por último, hice el commit correspondiente a la prueba del cambio de umbral y subí todos los cambios al repositorio remoto en GitHub, cerrando y consolidando con éxito la entrega completa de la práctica.
+
+
+## 17. Validación endpoint
+
+Volví a desplegar el modelo y le envié la entrada de prueba para validar que responde bien con datos nuevos. El resultado fue 0.0169, que no es un 0 o un 1 directo sino una probabilidad, así que se interpreta con el umbral de 0.5: al ser menor, el modelo clasifica el caso como Normal (0), con alta confianza.
+
